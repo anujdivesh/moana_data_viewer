@@ -1,0 +1,622 @@
+html, body, #cesiumContainer {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+}
+
+#panel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 300px;
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+  padding: 10px 12px 12px;
+  background: #fff;
+  color: #1f2328;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+/* Collapsed: just the header. */
+#panel.collapsed {
+  width: auto;
+  padding: 6px 10px;
+}
+
+#panel.collapsed #panel-body {
+  display: none;
+}
+
+/* "Pacific Ocean Portal – Moana Viewer", above Layers; shown collapsed too. */
+.app-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eaeef2;
+  color: #0a7ea4;
+  font: 600 14px system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.app-title img {
+  flex: none;
+}
+
+#panel.collapsed .app-title {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+}
+
+#panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: 600 15px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+#panel-toggle::before {
+  content: "▸";
+  font-size: 12px;
+  color: #57606a;
+  transition: transform 0.15s;
+}
+
+#panel-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+
+#panel-body {
+  margin-top: 8px;
+}
+
+#browser {
+  width: min(520px, calc(100% - 32px));
+  padding: 12px;
+  background: #fff;
+  color: #1f2328;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font: 13px system-ui, sans-serif;
+}
+
+#browser::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.browser-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.browser-actions button {
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+#browse-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #57606a;
+}
+
+#browse-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: min(360px, 60vh);
+  overflow-y: auto;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+}
+
+#browse-list li {
+  display: flex;
+  gap: 6px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+#browse-list li:hover {
+  background: #f3f4f6;
+}
+
+#browse-list .entry-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#browse-list .entry-kind {
+  color: #0969da;
+  font-size: 11px;
+}
+
+#browse-list .empty {
+  color: #57606a;
+  cursor: default;
+}
+
+#browse-list .empty:hover {
+  background: none;
+}
+
+#open-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#open-form input[type="text"] {
+  padding: 4px 6px;
+  min-width: 0;
+}
+
+#open-form .source-row {
+  display: flex;
+  gap: 6px;
+}
+
+#open-form .source-row input {
+  flex: 1;
+}
+
+#open-form button,
+#browse-up {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+#status {
+  margin: 0;
+  color: #57606a;
+}
+
+#status:empty {
+  display: none;
+}
+
+#status.error {
+  color: #cf222e;
+}
+
+#layer-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+#layer-list:empty,
+#folder-list:empty {
+  display: none;
+}
+
+/* Folders, right below Open. */
+#folder-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+#folder-list li {
+  padding: 5px 0;
+  border-top: 1px solid #d0d7de;
+}
+
+#folder-list .row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#folder-list .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#folder-list button {
+  padding: 1px 5px;
+  cursor: pointer;
+}
+
+/* "Layers" heading with Clear all, shown only when there are layers. */
+.layers-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  color: #57606a;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.layers-bar:has(+ #layer-list:empty) {
+  display: none;
+}
+
+.layers-bar button {
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+#layer-list li {
+  padding: 5px 0;
+  border-top: 1px solid #d0d7de;
+}
+
+#layer-list .row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#layer-list .swatch.raster {
+  background: linear-gradient(90deg, #440154, #21918c, #fde725);
+}
+
+#layer-list .style {
+  margin: 4px 0 0 22px;
+}
+
+#layer-list .style summary {
+  cursor: pointer;
+  color: #57606a;
+}
+
+#layer-list .style select,
+#layer-list .style .range {
+  margin-top: 4px;
+}
+
+#layer-list .style .range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#layer-list .style .range input {
+  width: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+#layer-list .style select {
+  display: block;
+  max-width: 100%;
+}
+
+#layer-list .style .dim {
+  margin-top: 4px;
+}
+
+#layer-list .style .dim label {
+  display: block;
+  color: #57606a;
+}
+
+#layer-list .style .dim input[type="range"] {
+  width: 100%;
+  margin: 2px 0 0;
+}
+
+#layer-list .swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+#layer-list .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#layer-list .failed .name {
+  color: #cf222e;
+}
+
+#layer-list .pending .name {
+  color: #57606a;
+  font-style: italic;
+}
+
+#layer-list button {
+  padding: 1px 5px;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  #panel {
+    width: calc(100% - 20px);
+    max-height: 45%;
+  }
+}
+
+/* The folder window, in the middle of the screen: a folder's plottable files. */
+#folder-dialog {
+  width: min(760px, calc(100% - 32px));
+  padding: 16px;
+  background: #fff;
+  color: #1f2328;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  font: 14px system-ui, sans-serif;
+}
+
+#folder-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+#folder-dialog .dialog-head {
+  margin-bottom: 8px;
+  font-size: 17px;
+}
+
+#folder-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #57606a;
+  font-size: 12px;
+}
+
+#folder-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: min(480px, 60vh);
+  overflow-y: auto;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+}
+
+#folder-files li {
+  padding: 5px 10px;
+  border-bottom: 1px solid #eaeef2;
+}
+
+#folder-files li:hover {
+  background: #f3f4f6;
+}
+
+#folder-files label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+#folder-files .entry-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#folder-files .entry-kind {
+  color: #0969da;
+  font-size: 12px;
+}
+
+#folder-files .subfolder {
+  cursor: pointer;
+}
+
+#folder-files .empty {
+  color: #57606a;
+}
+
+#folder-files .empty:hover {
+  background: none;
+}
+
+#folder-dialog .folder-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#folder-dialog .folder-actions label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #57606a;
+}
+
+#folder-dialog .spacer {
+  flex: 1;
+}
+
+#folder-dialog button,
+#folder-up {
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+#folder-dialog button.primary {
+  background: #1f6feb;
+  color: #fff;
+  border: 1px solid #1a5fd0;
+  border-radius: 6px;
+}
+
+#folder-dialog button.primary:disabled {
+  background: #94b8f0;
+  border-color: #94b8f0;
+  cursor: default;
+}
+
+/* Map controls: a white bar down the right-hand side. */
+#map-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+#map-controls button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: #1f2328;
+  cursor: pointer;
+}
+
+#map-controls button:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+#map-controls button:disabled {
+  color: #c4c9cf;
+  cursor: default;
+}
+
+#map-controls button.separated {
+  margin-top: 4px;
+  border-top: 1px solid #eaeef2;
+  border-radius: 0 0 6px 6px;
+}
+
+#map-controls button.active {
+  background: #ddf4ff;
+  color: #0969da;
+}
+
+#map-controls svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#compass svg {
+  transition: transform 0.1s linear;
+}
+
+#compass .north {
+  fill: #cf222e;
+  stroke: #cf222e;
+}
+
+#compass .south {
+  fill: #fff;
+  stroke: #8c959f;
+}
+
+/* Values on click. */
+#identify {
+  position: absolute;
+  z-index: 10;
+  max-width: 340px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: #fff;
+  color: #1f2328;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font: 12px system-ui, sans-serif;
+}
+
+#identify .close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: #57606a;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#identify section + section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eaeef2;
+}
+
+#identify h3 {
+  margin: 0 18px 4px 0;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#identify table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#identify td {
+  padding: 1px 0;
+  vertical-align: top;
+}
+
+#identify td:first-child {
+  padding-right: 10px;
+  color: #57606a;
+  word-break: break-word;
+}
+
+#identify td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}

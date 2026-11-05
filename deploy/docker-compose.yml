@@ -1,0 +1,57 @@
+# Moana Viewer (Pacific Ocean Portal)
+#
+#   cp deploy/.env.example deploy/.env      # then edit it (deploy.sh does this for you)
+#   ./deploy/deploy.sh
+#
+# The data stays on the host and is mounted read-only; the image never contains it.
+# The layer list, point-cloud tiles and temporary uploads live in the moana-state volume.
+
+name: moana-viewer
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: moana-viewer:latest
+    restart: unless-stopped
+    ports:
+      # Host 127.0.0.1:3130 -> container 8000; nginx proxies the site (or BASE_PATH) here.
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3130}:8000"
+    # Everything in deploy/.env reaches the app (optional extras such as AWS_* or
+    # SSL_CERT_FILE work by adding them there); the lines below fix the rest.
+    env_file: .env
+    environment:
+      DJANGO_DEBUG: "false"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in deploy/.env}
+      DJANGO_ALLOWED_HOSTS: ${ALLOWED_HOSTS:?set ALLOWED_HOSTS in deploy/.env}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      CESIUM_ION_TOKEN: ${CESIUM_ION_TOKEN:?set CESIUM_ION_TOKEN in deploy/.env}
+      BEHIND_PROXY: ${BEHIND_PROXY:-true}
+      BASE_PATH: ${BASE_PATH:-}
+      DATA_ROOTS: /data
+      DATABASE_PATH: /var/lib/moana/db.sqlite3
+      CACHE_DIR: /var/lib/moana/cache
+      FILE_UPLOAD_TEMP_DIR: /var/lib/moana/uploading
+    volumes:
+      # Host folder with the datasets people may browse and open (read-only).
+      - ${DATA_PATH:?set DATA_PATH in deploy/.env}:/data:ro
+      - moana-state:/var/lib/moana
+    # Hardening: only the state volume and a small /tmp are writable, no Linux
+    # capabilities, no privilege escalation, bounded processes.
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/uploads/', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  moana-state:

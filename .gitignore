@@ -1,0 +1,52 @@
+# Moana Viewer: files that stay on each machine and never go into git.
+
+# Secrets and per-machine settings (deploy/.env.example is the committed template)
+.env
+.env.*
+!.env.example
+deploy/.env
+deploy/.env.*
+!deploy/.env.example
+
+# Local CA bundle for networks that re-sign HTTPS (e.g. Zscaler)
+certs/
+
+# Python virtual environment
+vgeo/
+venv/
+.venv/
+
+# Python build and cache files
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django: database, collected static files, the app's caches and temporary uploads
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+cache/
+media/
+
+# Logs
+*.log
+
+# Data never belongs in the repository; the viewer reads it in place
+*.laz
+*.las
+*.pmtiles
+*.tif
+*.tiff
+*.nc
+*.nc4
+*.zarr/
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+# Build context for deploy/Dockerfile (the project root): only what the image needs.
+
+# Everything except what the image needs.
+*
+!requirements.txt
+!manage.py
+!config
+!viewer
+!deploy/entrypoint.sh
+
+# Never inside, even within the folders above.
+**/__pycache__
+**/*.pyc
+viewer/tests.py

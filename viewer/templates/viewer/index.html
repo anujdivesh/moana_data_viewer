@@ -1,0 +1,137 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moana Viewer</title>
+  <link rel="icon" href="{% static 'viewer/favicon.ico' %}" sizes="any">
+  <link rel="icon" type="image/png" href="{% static 'viewer/favicon-32.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'viewer/apple-touch-icon.png' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.123.0/Build/Cesium/Widgets/widgets.css">
+  <link rel="stylesheet" href="{% static 'viewer/viewer.css' %}?v={{ asset_version }}">
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.123.0/Build/Cesium/Cesium.js"></script>
+  <!-- For reading local files in the browser (local.js). -->
+  <script src="https://cdn.jsdelivr.net/npm/proj4@2.12.1/dist/proj4.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/shpjs@6.1.0/dist/shp.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pmtiles@3.2.1/dist/pmtiles.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <aside id="panel" class="collapsed">
+    <div class="app-title">
+      <img src="{% static 'viewer/favicon-32.png' %}" alt="" width="20" height="20">
+      <span>Pacific Ocean Portal – Moana Viewer</span>
+    </div>
+    <button type="button" id="panel-toggle" aria-expanded="false">Layers</button>
+    <div id="panel-body">
+    <form id="open-form">
+      {% csrf_token %}
+      {% if is_local %}
+      <div class="source-row">
+        <input type="text" name="source" placeholder="Path or URL (; for several)">
+        <button type="button" id="browse-button" title="Choose a file">Browse…</button>
+        <button type="button" id="folder-button" title="Choose a folder: a .zarr store opens as a layer; any other folder lists its files">Folder…</button>
+      </div>
+      {% else %}
+      <button type="button" id="local-button" title="Read files from this computer">From this computer…</button>
+      <div class="source-row">
+        <input type="text" name="source" placeholder="Server path or URL (; for several)">
+        <button type="button" id="browse-button" title="Browse the server's data folders">Server files…</button>
+      </div>
+      {% endif %}
+      <input type="file" id="local-input" multiple hidden>
+      <input type="text" name="name" placeholder="Layer name (optional)">
+      <button type="submit">Open</button>
+      <p id="status" role="status"></p>
+    </form>
+    <ul id="folder-list"></ul>
+    <div class="layers-bar">
+      <span>Layers</span>
+      <button type="button" id="clear-layers" title="Remove all layers from the map">Clear all</button>
+    </div>
+    <ul id="layer-list"></ul>
+    </div>
+  </aside>
+
+  <dialog id="browser">
+    <div class="browser-bar">
+      <button type="button" id="browse-up" title="Up one folder">↑</button>
+      <span id="browse-path"></span>
+    </div>
+    <ul id="browse-list"></ul>
+    <div class="browser-actions">
+      <button type="button" id="browse-cancel">Cancel</button>
+    </div>
+  </dialog>
+
+  <div id="map-controls" role="toolbar" aria-label="Map controls">
+    <button type="button" id="zoom-in" title="Zoom in">
+      <svg viewBox="0 0 20 20"><path d="M10 4v12M4 10h12"/></svg>
+    </button>
+    <button type="button" id="zoom-out" title="Zoom out">
+      <svg viewBox="0 0 20 20"><path d="M4 10h12"/></svg>
+    </button>
+    <button type="button" id="tilt-down" title="Tilt towards the horizon">
+      <svg viewBox="0 0 20 20"><path d="M3 16h14L13 9H7z"/><path d="M10 3v5M8 5l2-2 2 2"/></svg>
+    </button>
+    <button type="button" id="tilt-up" title="Look straight down">
+      <svg viewBox="0 0 20 20"><rect x="4" y="11" width="12" height="6"/><path d="M10 3v5M8 6l2 2 2-2"/></svg>
+    </button>
+    <button type="button" id="rotate-left" title="Rotate left">
+      <svg viewBox="0 0 20 20"><path d="M5 9a5.5 5.5 0 1 1 1.6 4.9"/><path d="M5 4v5h5"/></svg>
+    </button>
+    <button type="button" id="rotate-right" title="Rotate right">
+      <svg viewBox="0 0 20 20"><path d="M15 9a5.5 5.5 0 1 0-1.6 4.9"/><path d="M15 4v5h-5"/></svg>
+    </button>
+    <button type="button" id="compass" class="separated" title="Reset north">
+      <svg viewBox="0 0 20 20"><path class="north" d="M10 2l3 8h-6z"/><path class="south" d="M10 18l-3-8h6z"/></svg>
+    </button>
+    <button type="button" id="measure" class="separated" title="Measure distance">
+      <svg viewBox="0 0 20 20"><path d="M2.5 13.5l11-11 4 4-11 11z"/><path d="M6 10l1.5 1.5M8.5 7.5L11 10M11 5l1.5 1.5"/></svg>
+    </button>
+  </div>
+
+  <div id="identify" hidden>
+    <button type="button" class="close" title="Close">×</button>
+    <div class="identify-body"></div>
+  </div>
+
+  <dialog id="folder-dialog">
+    <div class="dialog-head">
+      <strong id="folder-title"></strong>
+    </div>
+    <div class="browser-bar">
+      <button type="button" id="folder-up" title="Up one folder">↑</button>
+      <span id="folder-path"></span>
+    </div>
+    <ul id="folder-files"></ul>
+    <div class="folder-actions">
+      <label><input type="checkbox" id="folder-all"> All</label>
+      <span class="spacer"></span>
+      <button type="button" id="folder-cancel">Close</button>
+      <button type="button" id="folder-plot" class="primary" disabled>Plot selected</button>
+    </div>
+  </dialog>
+
+  {{ cesium_ion_token|json_script:"cesium-token" }}
+  <script>
+    window.MAX_UPLOAD_SIZE = {{ max_upload_size }};
+    window.TEMP_UPLOAD_HOURS = {{ temp_upload_hours }};
+    window.VIEWER_URLS = {
+      crs: "{% url 'viewer:crs' %}",
+      temp: "{% url 'viewer:upload-temp' %}",
+      browse: "{% url 'viewer:browse' %}",
+      pick: "{% url 'viewer:pick' %}",
+      list: "{% url 'viewer:upload-list' %}",
+      open: "{% url 'viewer:upload-open' %}",
+      detail: "{% url 'viewer:upload-delete' 0 %}",
+      value: "{% url 'viewer:upload-value' 0 %}",
+    };
+  </script>
+  <script src="{% static 'viewer/local.js' %}?v={{ asset_version }}"></script>
+  <script src="{% static 'viewer/viewer.js' %}?v={{ asset_version }}"></script>
+</body>
+</html>
